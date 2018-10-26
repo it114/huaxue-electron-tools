@@ -14,6 +14,45 @@
     <script>
       // You can also require other files to run in this process
       require('./renderer.js')
+      require('./export.js')
+     
+      var dictorySelected = null;
+      function showFileDialog() {
+        const dialog = require('electron').remote.dialog
+        dialog.showOpenDialog({ properties: ['openDirectory'] }, (filename) => {
+          if (filename.length === 1) {
+            dictorySelected = filename[0];
+            document.getElementById('dictorySelected_span').innerHTML = '';
+            document.getElementById('dictorySelected_span').innerHTML=dictorySelected;
+          }
+        });
+      }
+
+    const ipc = require('electron').ipcRenderer;
+    function createJson() {
+      console.log('index.html,dictorySelected=>'+dictorySelected);
+      if(!dictorySelected) {
+        alert('请选择文件所在目录');
+        return;
+      }
+      ipc.send('createJSON', dictorySelected)
+    }
+    
     </script>
-  </body>
+
+
+<div class="container">
+  <div class="selecter">
+    <input type="button" onclick="showFileDialog()" value="选择目录"></button>
+  </div>
+
+  <div>选择的文件夹是：<span style="color:blue" id="dictorySelected_span">11</span></div>
+
+  <div class="selecter">
+    <input type="button" onclick="createJson()" value="根据配置创建JSON文件"></button>
+  </div>
+
+</div>
+
+</body>
 </html>

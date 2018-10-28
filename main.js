@@ -62,7 +62,6 @@ function createJson(filepath) {
       return ;
   }
   //JSON文件
-  this.isLoading = true
   const fs = require('fs')
   const path = require('path')
   fs.readdir(filepath, (err, file) => {
@@ -84,10 +83,12 @@ function createJson(filepath) {
               let meta = JSON.parse(data);
               let price  = meta.price;
               let dirId  = meta.dirId;
-              //构造对象
+              //构造对象 
               var dir = {};
               dir['dirId'] = dirId;
-              dir['price'] = price;
+              dir['fee'] = (price==0)? true:false;
+              dir['order'] = dirId;
+              dir['dirLogo'] = 'http://shanghaihuaxue.texuan.wang/dir_logo.png';
               dir['dirname'] = filename;
               let files =  readFilelist(filepath,filename,(tempIndex+1));
               if(files) {
@@ -95,48 +96,57 @@ function createJson(filepath) {
                 dirs[tempIndex] = dir;
                 tempIndex++;
               }
-              console.log(JSON.stringify(dirs));
-
+              let dir_json =  JSON.stringify(dirs);
+              console.log("dirs json =>"+dir_json);
           } catch(err) {
-            console.err('parse file meta error '+JSON.stringify(err));
+            console.error('parse file meta error '+JSON.stringify(err));
           }
       }
     }
-});
+
+
+    writefile.writefile(path.join(filepath,"allbook.json"), JSON.stringify(dirs) ,()=>{
+      console.log('write finished !');
+    });//传入闭包函数
+
+
+ });
+
+
+ var writefile = require('./fs-utils');
+
 
  function readFilelist(filepath,filename,index) {
               //循环文件夹的pdf
-               fs.readdir(path.join(filepath,filename), (err, filelist) => {
-                  if (err) {
-                    alert('Failed to Open directory');
-                    return;
+              let filelist = fs.readdirSync(path.join(filepath,filename));
+              let arr = filelist.toString().split(',');
+              console.log('filelist2=>'+arr.length);
+              if (!filelist) {
+                console.error('Failed to Open directory');
+                return;
+              }
+              let fileIndex = 0;
+              let files = new Array();
+              for (let pdfFilename of filelist) {
+                const statPdf =  fs.statSync(path.join(filepath, filename,pdfFilename))
+                if(statPdf.isFile()) {
+                  if (path.extname(pdfFilename).toLowerCase() === '.pdf') {
+                    var file= {};
+                    file['fileid'] =   index+"00"+fileIndex;
+                    file['fee'] = false;
+                    file['price'] = 0;
+                    file['filename'] = pdfFilename;
+                    file['pdf'] = "http://shanghaihuaxue.texuan.wang/"+encodeURIComponent(filename+"/"+pdfFilename);
+                    file['icon'] = 'http://shanghaihuaxue.texuan.wang/pdf-icon.jpeg';
+                    file['cTime'] = '2018/10/18 8:7:54';
+                    file['author'] = 'zxy';
+                    file['pages'] = 100;                            
+                    files[fileIndex] = file;
+                    fileIndex ++;
                   }
-                  let fileIndex = 0;
-                  let files = new Array();
-                  for (let pdfFilename of filelist) {
-                    const statPdf =  fs.statSync(path.join(filepath, filename,pdfFilename))
-                    if(statPdf.isFile()) {
-                      if (path.extname(pdfFilename).toLowerCase() === '.pdf') {
-                        var file= {};
-                        file['fileid'] =   index+"00"+fileIndex;
-                        file['fee'] = false;
-                        file['price'] = 0;
-                        file['filename'] = pdfFilename;
-                        file['pdf'] = encodeURIComponent(pdfFilename);
-                        file['icon'] = 'http://test.apm.wang/assets/chusanhuaxue/pdf-icon.jpeg';
-                        file['cTime'] = '2018/10/18 8:7:54';
-                        file['author'] = 'zxy';
-                        file['pages'] = 100;                            
-                        files[fileIndex] = file;
-                        fileIndex ++;
-                      }
-                    }
-                  }
-                 return files;
-                  // dirs[tempIndex] = dir;
-                  // //读取文件夹下面的pdf列表文件
-                  // console.log("文件夹："+JSON.stringify(dirs));
-              });
+                }
+              }
+              return files;
 }
 }
 
